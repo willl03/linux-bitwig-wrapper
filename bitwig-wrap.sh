@@ -25,14 +25,17 @@ export LIBVA_DRIVER_NAME=iHD
 # 3. JVM Tuning: Low-latency ZGC + Software 2D (prevents Intel Xe TLB timeouts)
 export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:ConcGCThreads=1 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=1 -Dsun.java2d.opengl=false"
 
-# 4. Set core groups and launch Bitwig pinned to APPCORES
+# 4. Set core groups
 APPCORES="1-13"     # Skip core 0 (system interrupts) & cores 14-15 (LPE)
-PCORES="1-5"        # 5 P-cores for PipeWire / audio timings
-ECORES="6-13"       # 8 E-cores for Bitwig GUI, audio engine & JVM
+PCORES="1-5"        # 5 P-cores for Bitwig UI, PipeWire audio timings, JVM compilers + GC
+ECORES="6-13"       # 8 E-cores for audio engine (8 threads), Linux plugins, Wine/yabridge VSTs
 
-systemd-run --user --scope -p AllowedCPUs="$APPCORES" /usr/bin/bitwig-studio "$@" &
+# 5. Launch Bitwig with spoofed # of cores to limit the # of audio threads
+exec env LD_PRELOAD="/usr/local/lib/libspoof_cores.so${LD_PRELOAD:+:$LD_PRELOAD}" \
+    taskset -c $APPCORES /usr/bin/bitwig-studio "$@" &
 LAUNCH_PID=$!
 
+# 6. Set CPU pinnings and affinities
 (
     # --- Phase A: Route main process & JVM to E-cores ---
     for i in {1..100}; do
