@@ -5,6 +5,10 @@
 # ==============================================================================
 set -uo pipefail
 
+# 0. Force the global PipeWire quantum while Bitwig is active
+pw-metadata -n settings 0 clock.force-quantum 512
+pw-metadata -n settings 0 clock.force-rate 48000
+
 # 1. PipeWire Quantum & Target Latency
 export PIPEWIRE_LATENCY="512/48000"
 export PIPEWIRE_QUANTUM="512/48000"
@@ -28,16 +32,16 @@ export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:ConcGCThreads=1 -XX:CICompilerCount=2 
 # 4. Set core groups
 APPCORES="1-13"     # Skip core 0 (system interrupts) & cores 14-15 (LPE)
 PCORES="1-5"        # 5 P-cores for Bitwig UI, PipeWire audio timings, JVM compilers + GC
-ECORES="6-13"       # 8 E-cores for audio engine (8 threads), Linux plugins, Wine/yabridge VSTs
+ECORES="6-13"       # 8 E-cores for audio engine, threads (limited to 8), Linux plugins, Wine/yabridge VSTs
 
 # 5. Launch Bitwig with spoofed # of cores to limit the # of audio threads
-exec env LD_PRELOAD="/usr/local/lib/libspoof_cores.so${LD_PRELOAD:+:$LD_PRELOAD}" \
+env LD_PRELOAD="/usr/local/lib/libspoof_cores.so${LD_PRELOAD:+:$LD_PRELOAD}" \
     taskset -c $APPCORES /usr/bin/bitwig-studio "$@" &
 LAUNCH_PID=$!
 
 # 6. Set CPU pinnings and affinities
 (
-    # --- Phase A: Route main process & JVM to E-cores ---
+    # --- Phase A: Route main process to E-Cores & JVM to P-cores ---
     for i in {1..100}; do
         MAIN_PID=$(pgrep -u "$UID" -x "BitwigStudio" | head -n1)
         if [ -n "$MAIN_PID" ]; then
@@ -83,7 +87,6 @@ LAUNCH_PID=$!
         for bph_pid in $(pgrep -u "$UID" -f "BitwigPluginHost"); do
             taskset -pc "$ECORES" "$bph_pid" >/dev/null 2>&1
         done
-        break
         sleep 1
     done
 
@@ -93,7 +96,6 @@ LAUNCH_PID=$!
         if [ -n "$WINE_PID" ]; then
             taskset -pc "$PCORES" "$WINE_PID" >/dev/null 2>&1
         fi
-        break
         sleep 1
     done
 ) &
