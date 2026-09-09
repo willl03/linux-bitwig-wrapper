@@ -27,7 +27,7 @@ export MESA_VK_ENABLE_SUBALLOC=0
 export LIBVA_DRIVER_NAME=iHD
 
 # 3. JVM Tuning: Low-latency ZGC + Software 2D (prevents Intel Xe TLB timeouts)
-export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:ConcGCThreads=1 -XX:CICompilerCount=2 -XX:TieredStopAtLevel=1 -Dsun.java2d.opengl=false"
+export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:CICompilerCount=2 -XX:TieredStopAtLevel=1 -Dsun.java2d.opengl=false"
 
 # 4. Set core groups
 APPCORES="1-13"     # Skip core 0 (system interrupts) & cores 14-15 (LPE)
