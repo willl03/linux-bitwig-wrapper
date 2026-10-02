@@ -11,23 +11,20 @@ pw-metadata -n settings 0 clock.force-rate 48000
 
 # 1. PipeWire Quantum & Target Latency
 export PIPEWIRE_LATENCY="512/48000"
-export PIPEWIRE_QUANTUM="512/48000"
 
 # 2. Wine & yabridge Synchronization
 export WINEFSYNC=1
 export WINEDEBUG="-all"
 export WINE_DISABLE_BUG_REPORT=1
+export WINE_X11_NO_FULLSCREEN_HACKS=1
 
 # Tame DXVK to prevent compiler thread floods while allowing the GUI to embed
 export DXVK_NUM_COMPILER_THREADS=1
-export DXVK_STATE_CACHE=0
-export DXVK_ASYNC=0
 
-export MESA_VK_ENABLE_SUBALLOC=0
 export LIBVA_DRIVER_NAME=iHD
 
 # 3. JVM Tuning: Low-latency ZGC + Software 2D (prevents Intel Xe TLB timeouts)
-export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:CICompilerCount=2 -XX:TieredStopAtLevel=1 -Dsun.java2d.opengl=false"
+export JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:CICompilerCount=2"
 
 # 4. Set core groups
 APPCORES="1-13"     # Skip core 0 (system interrupts) & cores 14-15 (LPE)
